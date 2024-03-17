@@ -9,16 +9,16 @@
 #include <list>
 #include <memory>
 #include <map>
+#include <numeric>
 #include <coroutine>
 #include <algorithm>
 #include <random>
 #include <cassert>
 #include <typeinfo>
-#include<unistd.h> 
+#include <iomanip>
+// #include<unistd.h> 
 
 using namespace std;
-
-bool DOINTRA = true;
 
 auto rng = std::default_random_engine(869468469);
 struct Result{
@@ -38,10 +38,11 @@ public:
     vector<vector<int>> distances;
     vector<int> costs;
     string name;
-    Algo(vector<vector<int>> distances, vector<int> costs, string name)
-        : distances(distances), costs(costs), name(name) {}
+    int starting_node;
+    Algo(vector<vector<int>> distances, vector<int> costs, string name, int starting_node)
+        : distances(distances), costs(costs), name(name), starting_node(starting_node) {}
     virtual Result solve() =0;
-    int calculate_cost(vector<int> solution, vector<vector<int>> distances, vector<int> costs){
+    int calculate_cost(vector<int> solution){
         int cost = 0;
         for(int j=0; j<solution.size()-1; j++){
             cost += distances[solution[j]][solution[j+1]];
@@ -59,38 +60,81 @@ public:
 
 class RandomSearch : public Algo {
 public:
-    RandomSearch(vector<vector<int>> distances, vector<int> costs)
-        : Algo(distances, costs, "RandomSearch") {}
+    double time_limit;
+    RandomSearch(vector<vector<int>> distances, vector<int> costs, int starting_node, double time_limit)
+        : Algo(distances, costs, "RandomSearch", starting_node), time_limit(time_limit) {}
     
     Result solve() {
-        vector<int> worstSolution;
-        int solution_size = this->distances.size()/2;
-        vector<int> current_solution = vector<int>(solution_size);
-        vector<int> visited(this->distances.size());
-
-        for(int j=0; j<solution_size; j++){
-            if (j==0){
-                current_solution[j] = this->starting_node;
-                visited[this->starting_node] = true;
-                continue;
+        while (true){
+            clock_t start, end;
+            start = clock();
+            vector<int> worstSolution;
+            int solution_size = this->distances.size();
+            vector<int> current_solution = vector<int>(solution_size);
+            iota(current_solution.begin(), current_solution.end(), 0);
+            shuffle(current_solution.begin(), current_solution.end(), rng);
+            int bestCost = calculate_cost(current_solution);
+            vector<int> bestSolution = current_solution;
+            while (true){
+                end = clock();
+                double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
+                if(time_taken >= this->time_limit){
+                    return Result(bestCost, 0, 0, bestSolution, worstSolution);
+                }
+                shuffle(current_solution.begin(), current_solution.end(), rng);
+                int cost = calculate_cost(current_solution);
+                if(cost < bestCost){
+                    bestCost = cost;
+                    bestSolution = current_solution;
+                }
             }
-            int next = rand() % this->distances.size();
-            while(visited[next])next = rand() % this->distances.size();
-            current_solution[j] = next;
-            visited[next]=true;
-        }        
-        return Result(0, 0, 0, current_solution, worstSolution);
+        }
     }
+};
+
+class RandomWalk: public Algo {
+public:
+    double time_limit;
+    RandomWalk(vector<vector<int>> distances, vector<int> costs, int starting_node, double time_limit)
+        : Algo(distances, costs, "RandomWalk", starting_node), time_limit(time_limit) {}
+
+    Result solve() {
+        vector<int> worstSolution;
+        int solution_size = this->distances.size();
+        vector<int> current_solution = vector<int>(solution_size);
+        iota(current_solution.begin(), current_solution.end(), 0);
+        shuffle(current_solution.begin(), current_solution.end(), rng);
+        int bestCost = calculate_cost(current_solution);
+        vector<int> bestSolution = current_solution;
+        clock_t start, end;
+        start = clock();
+        while (true){
+            end = clock();
+            double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
+            if(time_taken >= this->time_limit){
+                return Result(bestCost, 0, 0, bestSolution, worstSolution);
+            }
+            int i = rng() % solution_size;
+            int j = rng() % solution_size;
+            swap(current_solution[i], current_solution[j]);
+            int cost = calculate_cost(current_solution);
+            if(cost < bestCost){
+                bestCost = cost;
+                bestSolution = current_solution;
+            }
+        }
+    }
+
 };
 
 class GreedyCycle: public Algo {
 public:
-    GreedyCycle(vector<vector<int>> distances, vector<int> costs)
-        : Algo(distances, costs, "GreedyCycle") {}
+    GreedyCycle(vector<vector<int>> distances, vector<int> costs, int starting_node)
+        : Algo(distances, costs, "GreedyCycle", starting_node) {}
 
     Result solve() {
         vector<int> worstSolution;
-        int solution_size = this->distances.size()/2;
+        int solution_size = this->distances.size();
         vector<int> current_solution;
         vector<bool> visited(this->costs.size());
         current_solution.push_back(this->starting_node);
@@ -173,18 +217,9 @@ enum InitialSolutionType
 {
     randomAlg,
     GC,
-    G2Rw
+    randomWalk
 };
-enum NeighbourhoodType
-{
-    intra,
-    inter
-};
-enum InterNeighbourhoodType
-{
-    twoNode,
-    twoEdges
-};
+
 enum ProblemInstance
 {
     TSPA,
@@ -199,15 +234,9 @@ std::map<SearchType, std::string> SearchTypeStrings = {
 
 std::map<InitialSolutionType, std::string> InitialSolutionTypeStrings = {
     {randomAlg, "random"},
+    {GC, "GreedyCycle"},
+    {randomWalk, "randomWalk"}
 };
-
-std::map<NeighbourhoodType, std::string> NeighbourhoodTypeStrings = {
-    {intra, "intra"},
-    {inter, "inter"}};
-
-std::map<InterNeighbourhoodType, std::string> InterNeighbourhoodTypeStrings = {
-    {twoNode, "twoNode"},
-    {twoEdges, "twoEdges"}};
 
 std::map<ProblemInstance, std::string> ProblemInstanceStrings = {
     {TSPA, "TSPA"},
@@ -220,16 +249,12 @@ class LocalSearch : public Algo
 public:
     SearchType searchType;
     InitialSolutionType initialSolutionType;
-    InterNeighbourhoodType intraNeighbourhoodType;
-    vector<bool> visited;
     int nPoints;
-    LocalSearch(SearchType searchType, InitialSolutionType initialSolutionType, InterNeighbourhoodType intraNeighbourhoodType, vector<vector<int>> distances, vector<int> costs)
-        : Algo(distances, costs, "LS"), searchType(searchType), initialSolutionType(initialSolutionType), intraNeighbourhoodType(intraNeighbourhoodType)
+    LocalSearch(SearchType searchType, InitialSolutionType initialSolutionType, vector<vector<int>> distances, vector<int> costs, int starting_node)
+        : Algo(distances, costs, "LS", starting_node), searchType(searchType), initialSolutionType(initialSolutionType)
     {
         this->name += "_" + SearchTypeStrings[searchType];
         this->name += "_" + InitialSolutionTypeStrings[initialSolutionType];
-        this->name += "_" + InterNeighbourhoodTypeStrings[intraNeighbourhoodType];
-        visited = vector<bool>(distances.size());
         nPoints = distances.size();
     }
 
@@ -264,14 +289,6 @@ public:
     Result solve()
     {
         vector<int> solution = getInitialSolution(this->initialSolutionType);
-        for (int i = 0; i < visited.size(); i++)
-        {
-            visited[i] = false;
-        }
-        for (int i = 0; i < solution.size(); i++)
-        {
-            visited[solution[i]] = true;
-        }
         localSearch(&solution);
         return Result(calculate_cost(solution), 0, 0, solution, vector<int>());
     }
@@ -291,6 +308,10 @@ public:
                 {
                     bestDelta = delta;
                     bestMove = move;
+                    if (searchType == greedy)
+                    {
+                        break;
+                    }
                 }
             }
             if (bestDelta >= 0)
@@ -305,25 +326,25 @@ public:
     {
         if (ist == randomAlg)
         {
-            RandomSearch rs = RandomSearch(distances, costs);
+            RandomSearch rs = RandomSearch(distances, costs, starting_node, 0.0);
             return rs.solve().bestSolution;
+        }
+        else if (ist == randomWalk)
+        {
+            RandomWalk rw = RandomWalk(distances, costs, starting_node, 0.0);
+            return rw.solve().bestSolution;
+        }
+        else if (ist == GC)
+        {
+            GreedyCycle gc = GreedyCycle(distances, costs, starting_node);
+            return gc.solve().bestSolution;
         }
     }
 
     int calculateDelta(vector<int> &solution, vector<int> &move)
     {
         int delta;
-        if (move.size() == 3)
-        {
-            // exchange nodes
-            int i = move[0];
-            int new_node = move[1];
-            int old_node = solution[i];
-            int oldCost = costs[old_node] + distances[old_node][solution[fixIndex(i + 1, solution.size())]] + distances[old_node][solution[fixIndex(i - 1 + solution.size(), solution.size())]];
-            int newCost = costs[new_node] + distances[new_node][solution[fixIndex(i + 1, solution.size())]] + distances[new_node][solution[fixIndex(i - 1 + solution.size(), solution.size())]];
-            delta = newCost - oldCost;
-        }
-        else if (move.size() == 4)
+        if (move.size() == 4)
         {
             // edge exchnge
             int edge1_first = solution[move[0]];
@@ -343,66 +364,21 @@ public:
 
     void applyMove(vector<int> *solution, const vector<int> &move)
     { // modifies solution i think usuall  poinnter is enuogh
-        if (move.size() == 3)
-        {
-            int i = move[0];
-            int j = move[1];
-            (*solution)[i] = j;
-            visited[move[2]] = false;
-            visited[j] = true;
-        }
-        else if (move.size() == 4)
-        {
-            int j = move[1];
-            int k = move[2];
-            reverse(solution->begin() + j, solution->begin() + k + 1);
-        }
+        int j = move[1];
+        int k = move[2];
+        reverse(solution->begin() + j, solution->begin() + k + 1);
     }
 
     generator<vector<int>> neighbourhoodGenerator(vector<int> &currentSolution)
-    {
-        if (DOINTRA)
-        {
-            auto intraNeighbourhoodIterator = intraEdgesNeighbourhoodGenerator(currentSolution);
-            while (intraNeighbourhoodIterator.move_next())
-            {
-                co_yield intraNeighbourhoodIterator.current_value();
-            }
-        }
-        auto interNeighbourhoodIterator = interNeighbourhoodGenerator(currentSolution);
-        while (interNeighbourhoodIterator.move_next())
-        {
-            co_yield interNeighbourhoodIterator.current_value();
-        }
-    }
-
-    generator<vector<int>> interNeighbourhoodGenerator(vector<int> &currentSolution)
-    {
-        vector<int> move = {0, 0};
-        for (int i = 0; i < currentSolution.size(); i++)
-        {
-            int currentnode = currentSolution[i];
-            for (int j = 0; j < distances.size(); j++)
-            {
-                if (!visited[j])
-                {
-                    co_yield makeInterMove(i, j, currentSolution[i]);
-                }
-            }
-        }
-    }
-
-    vector<int> makeInterMove(int currentNodeId, int newNode, int currentNode)
-    {
-        return {currentNodeId, newNode, currentNode};
-    }
-
-    generator<vector<int>> intraEdgesNeighbourhoodGenerator(vector<int> &currentSolution)
-    {
+    { // generate moves, that do an edge exchange
         vector<int> temp_vec = {0, 0, 0, 0};
         vector<int> move = vector<int>(temp_vec);
-        for (int i = 0; i < currentSolution.size(); i++)
+        vector<int> indexes = currentSolution;
+        shuffle(indexes.begin(), indexes.end(), rng);
+
+        for (int x = 0; x < indexes.size(); x++)
         {
+            int i = indexes[x];
             int node1 = currentSolution[i];
             int node1_next = currentSolution[fixIndex(i + 1, currentSolution.size())];
             for (int j = i + 2; j < currentSolution.size(); j++)
@@ -413,6 +389,24 @@ public:
             }
         }
     }
+
+
+    // generator<vector<int>> intraEdgesNeighbourhoodGenerator(vector<int> &currentSolution)
+    // {
+    //     vector<int> temp_vec = {0, 0, 0, 0};
+    //     vector<int> move = vector<int>(temp_vec);
+    //     for (int i = 0; i < currentSolution.size(); i++)
+    //     {
+    //         int node1 = currentSolution[i];
+    //         int node1_next = currentSolution[fixIndex(i + 1, currentSolution.size())];
+    //         for (int j = i + 2; j < currentSolution.size(); j++)
+    //         {
+    //             int node2 = currentSolution[j];
+    //             int node2_next = currentSolution[fixIndex(j + 1, currentSolution.size())];
+    //             co_yield makeIntraMove(i, i + 1, j, fixIndex(j + 1, currentSolution.size()));
+    //         }
+    //     }
+    // }
 
     vector<int> makeIntraMove(int edge1_first, int edge1_second, int edge2_first, int edge2_second)
     {
@@ -457,80 +451,80 @@ vector<vector<int>> calcDistances(vector<vector<int>> data){
 
 int main(){
 
-    string root_path = "./data/";
-    vector<ProblemInstance> problemInstances = {TSPA, TSPB, TSPC, TSPD};
-    vector<SearchType> searchTypes = {steepest};
-    vector<InitialSolutionType> initialSolutionTypes = {randomAlg};
-    vector<InterNeighbourhoodType> interNeighbourhoodTypes = {twoEdges};
+    // string root_path = "./data/";
+    // vector<ProblemInstance> problemInstances = {TSPA, TSPB, TSPC, TSPD};
+    // vector<SearchType> searchTypes = {steepest};
+    // vector<InitialSolutionType> initialSolutionTypes = {randomAlg};
+    // vector<InterNeighbourhoodType> interNeighbourhoodTypes = {twoEdges};
 
 
-    for(auto problemInstance: problemInstances){
-        string file = root_path + ProblemInstanceStrings[problemInstance] + ".csv";
-        auto data = read_file(file);
-        auto distances = calcDistances(data);
-        vector<int> costs;
-        for(int i=0; i< data.size(); i++){
-            costs.push_back(data[i][2]);
-        }
-        vector<vector<int>> closestNeighbours = vector<vector<int>>(distances.size());
-        int n_closest = 10;
-        for(int i=0; i<distances.size(); i++){
-            vector<int> closest;
-            for(int j=0; j<distances.size(); j++){
-                if(i==j) continue;
-                closest.push_back(j);
-            }
-            sort(closest.begin(), closest.end(), [i, distances, &costs](int a, int b){
-                double costA = distances[i][a] + costs[a];
-                double costB = distances[i][b] + costs[b];
-                return costA < costB;
-            });
-            closestNeighbours[i] = vector<int>(closest.begin(), closest.begin() + n_closest);
-        }
-        for(auto searchType: searchTypes){
-            for(auto initialSolutionType: initialSolutionTypes){
-                for(auto interNeighbourhoodType: interNeighbourhoodTypes){
-                    cout << "Problem instance: " << ProblemInstanceStrings[problemInstance] << endl;
-                    cout << "Search type: " << SearchTypeStrings[searchType] << endl;
-                    cout << "Initial solution type: " << InitialSolutionTypeStrings[initialSolutionType] << endl;
-                    cout << "Inter neighbourhood type: " << InterNeighbourhoodTypeStrings[interNeighbourhoodType] << endl;
-                    Result algoResult = Result(INT32_MAX, 0, 0, vector<int>(), vector<int>());
-                    double averageTime = 0;
-                    for(int i=0; i<distances.size(); i++){
-                        LocalSearch ls = LocalSearch(searchType, initialSolutionType, interNeighbourhoodType, distances, costs);
-                        clock_t start, end;
-                        start = clock();
-                        vector<int> solution = ls.solve().bestSolution;
-                        end = clock();
-                        double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
-                        int cost = ls.calculate_cost(solution);
-                        if(cost < algoResult.bestCost){
-                            algoResult.bestCost = cost;
-                            algoResult.bestSolution = solution;
-                        }
-                        if(cost > algoResult.worstCost){
-                            algoResult.worstCost = cost;
-                            algoResult.worstSolution = solution;
-                        }
-                        algoResult.averageCost += cost;
-                        // cout << "Time taken: " << time_taken << endl;
-                        averageTime += time_taken;
-                    }
-                    algoResult.averageCost /= distances.size();
-                    cout << "Best cost: " << algoResult.bestCost << endl;
-                    cout << "Worst cost: " << algoResult.worstCost << endl;
-                    cout << "Average cost: " << algoResult.averageCost << endl;
-                    averageTime /= distances.size();
-                    cout << "Average time: " << averageTime << endl;
-                    cout << "Best solution: ";
-                    for(int i=0; i<algoResult.bestSolution.size(); i++){
-                        cout << algoResult.bestSolution[i] << " ";
-                    }
-                    cout << endl;
-                }
-            }
-        }
+    // for(auto problemInstance: problemInstances){
+    //     string file = root_path + ProblemInstanceStrings[problemInstance] + ".csv";
+    //     auto data = read_file(file);
+    //     auto distances = calcDistances(data);
+    //     vector<int> costs;
+    //     for(int i=0; i< data.size(); i++){
+    //         costs.push_back(data[i][2]);
+    //     }
+    //     vector<vector<int>> closestNeighbours = vector<vector<int>>(distances.size());
+    //     int n_closest = 10;
+    //     for(int i=0; i<distances.size(); i++){
+    //         vector<int> closest;
+    //         for(int j=0; j<distances.size(); j++){
+    //             if(i==j) continue;
+    //             closest.push_back(j);
+    //         }
+    //         sort(closest.begin(), closest.end(), [i, distances, &costs](int a, int b){
+    //             double costA = distances[i][a] + costs[a];
+    //             double costB = distances[i][b] + costs[b];
+    //             return costA < costB;
+    //         });
+    //         closestNeighbours[i] = vector<int>(closest.begin(), closest.begin() + n_closest);
+    //     }
+    //     for(auto searchType: searchTypes){
+    //         for(auto initialSolutionType: initialSolutionTypes){
+    //             for(auto interNeighbourhoodType: interNeighbourhoodTypes){
+    //                 cout << "Problem instance: " << ProblemInstanceStrings[problemInstance] << endl;
+    //                 cout << "Search type: " << SearchTypeStrings[searchType] << endl;
+    //                 cout << "Initial solution type: " << InitialSolutionTypeStrings[initialSolutionType] << endl;
+    //                 cout << "Inter neighbourhood type: " << InterNeighbourhoodTypeStrings[interNeighbourhoodType] << endl;
+    //                 Result algoResult = Result(INT32_MAX, 0, 0, vector<int>(), vector<int>());
+    //                 double averageTime = 0;
+    //                 for(int i=0; i<distances.size(); i++){
+    //                     LocalSearch ls = LocalSearch(searchType, initialSolutionType, interNeighbourhoodType, distances, costs);
+    //                     clock_t start, end;
+    //                     start = clock();
+    //                     vector<int> solution = ls.solve().bestSolution;
+    //                     end = clock();
+    //                     double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
+    //                     int cost = ls.calculate_cost(solution);
+    //                     if(cost < algoResult.bestCost){
+    //                         algoResult.bestCost = cost;
+    //                         algoResult.bestSolution = solution;
+    //                     }
+    //                     if(cost > algoResult.worstCost){
+    //                         algoResult.worstCost = cost;
+    //                         algoResult.worstSolution = solution;
+    //                     }
+    //                     algoResult.averageCost += cost;
+    //                     // cout << "Time taken: " << time_taken << endl;
+    //                     averageTime += time_taken;
+    //                 }
+    //                 algoResult.averageCost /= distances.size();
+    //                 cout << "Best cost: " << algoResult.bestCost << endl;
+    //                 cout << "Worst cost: " << algoResult.worstCost << endl;
+    //                 cout << "Average cost: " << algoResult.averageCost << endl;
+    //                 averageTime /= distances.size();
+    //                 cout << "Average time: " << averageTime << endl;
+    //                 cout << "Best solution: ";
+    //                 for(int i=0; i<algoResult.bestSolution.size(); i++){
+    //                     cout << algoResult.bestSolution[i] << " ";
+    //                 }
+    //                 cout << endl;
+    //             }
+    //         }
+    //     }
 
-    }
+    // }
 
 }
