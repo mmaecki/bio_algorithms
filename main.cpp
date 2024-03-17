@@ -1,5 +1,4 @@
 #include <vector>
-#include <string>
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -15,8 +14,8 @@
 #include <random>
 #include <cassert>
 #include <typeinfo>
-#include <iomanip>
-// #include<unistd.h> 
+#include <string>
+#include<unistd.h> 
 
 using namespace std;
 
@@ -289,6 +288,8 @@ public:
     Result solve()
     {
         vector<int> solution = getInitialSolution(this->initialSolutionType);
+        // cout << "Initial solution created" << endl;
+        // cout << solution.size() << endl;
         localSearch(&solution);
         return Result(calculate_cost(solution), 0, 0, solution, vector<int>());
     }
@@ -316,8 +317,11 @@ public:
             }
             if (bestDelta >= 0)
             {
+                // cout << "Local search finished" << endl;
                 break;
             }
+            // cout << "Applying move" << endl;
+            // cout << bestMove[0] << " " << bestMove[1] << " " << bestMove[2] << " " << bestMove[3] << endl;
             applyMove(solution, bestMove);
         }
     }
@@ -451,80 +455,60 @@ vector<vector<int>> calcDistances(vector<vector<int>> data){
 
 int main(){
 
-    // string root_path = "./data/";
-    // vector<ProblemInstance> problemInstances = {TSPA, TSPB, TSPC, TSPD};
-    // vector<SearchType> searchTypes = {steepest};
-    // vector<InitialSolutionType> initialSolutionTypes = {randomAlg};
-    // vector<InterNeighbourhoodType> interNeighbourhoodTypes = {twoEdges};
+    string root_path = "./data/";
+    vector<ProblemInstance> problemInstances = {TSPA};//, TSPB, TSPC, TSPD};
+    vector<SearchType> searchTypes = {steepest, greedy};
+    vector<InitialSolutionType> initialSolutionTypes = {randomAlg, GC, randomWalk};
 
 
-    // for(auto problemInstance: problemInstances){
-    //     string file = root_path + ProblemInstanceStrings[problemInstance] + ".csv";
-    //     auto data = read_file(file);
-    //     auto distances = calcDistances(data);
-    //     vector<int> costs;
-    //     for(int i=0; i< data.size(); i++){
-    //         costs.push_back(data[i][2]);
-    //     }
-    //     vector<vector<int>> closestNeighbours = vector<vector<int>>(distances.size());
-    //     int n_closest = 10;
-    //     for(int i=0; i<distances.size(); i++){
-    //         vector<int> closest;
-    //         for(int j=0; j<distances.size(); j++){
-    //             if(i==j) continue;
-    //             closest.push_back(j);
-    //         }
-    //         sort(closest.begin(), closest.end(), [i, distances, &costs](int a, int b){
-    //             double costA = distances[i][a] + costs[a];
-    //             double costB = distances[i][b] + costs[b];
-    //             return costA < costB;
-    //         });
-    //         closestNeighbours[i] = vector<int>(closest.begin(), closest.begin() + n_closest);
-    //     }
-    //     for(auto searchType: searchTypes){
-    //         for(auto initialSolutionType: initialSolutionTypes){
-    //             for(auto interNeighbourhoodType: interNeighbourhoodTypes){
-    //                 cout << "Problem instance: " << ProblemInstanceStrings[problemInstance] << endl;
-    //                 cout << "Search type: " << SearchTypeStrings[searchType] << endl;
-    //                 cout << "Initial solution type: " << InitialSolutionTypeStrings[initialSolutionType] << endl;
-    //                 cout << "Inter neighbourhood type: " << InterNeighbourhoodTypeStrings[interNeighbourhoodType] << endl;
-    //                 Result algoResult = Result(INT32_MAX, 0, 0, vector<int>(), vector<int>());
-    //                 double averageTime = 0;
-    //                 for(int i=0; i<distances.size(); i++){
-    //                     LocalSearch ls = LocalSearch(searchType, initialSolutionType, interNeighbourhoodType, distances, costs);
-    //                     clock_t start, end;
-    //                     start = clock();
-    //                     vector<int> solution = ls.solve().bestSolution;
-    //                     end = clock();
-    //                     double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
-    //                     int cost = ls.calculate_cost(solution);
-    //                     if(cost < algoResult.bestCost){
-    //                         algoResult.bestCost = cost;
-    //                         algoResult.bestSolution = solution;
-    //                     }
-    //                     if(cost > algoResult.worstCost){
-    //                         algoResult.worstCost = cost;
-    //                         algoResult.worstSolution = solution;
-    //                     }
-    //                     algoResult.averageCost += cost;
-    //                     // cout << "Time taken: " << time_taken << endl;
-    //                     averageTime += time_taken;
-    //                 }
-    //                 algoResult.averageCost /= distances.size();
-    //                 cout << "Best cost: " << algoResult.bestCost << endl;
-    //                 cout << "Worst cost: " << algoResult.worstCost << endl;
-    //                 cout << "Average cost: " << algoResult.averageCost << endl;
-    //                 averageTime /= distances.size();
-    //                 cout << "Average time: " << averageTime << endl;
-    //                 cout << "Best solution: ";
-    //                 for(int i=0; i<algoResult.bestSolution.size(); i++){
-    //                     cout << algoResult.bestSolution[i] << " ";
-    //                 }
-    //                 cout << endl;
-    //             }
-    //         }
-    //     }
-
-    // }
+    for(auto problemInstance: problemInstances){
+        string file = root_path + ProblemInstanceStrings[problemInstance] + ".csv";
+        auto data = read_file(file);
+        auto distances = calcDistances(data);
+        vector<int> costs;
+        for(int i=0; i< data.size(); i++){
+            costs.push_back(data[i][2]);
+        }
+        for(auto searchType: searchTypes){
+            for(auto initialSolutionType: initialSolutionTypes){
+                    cout << "Problem instance: " << ProblemInstanceStrings[problemInstance] << endl;
+                    cout << "Search type: " << SearchTypeStrings[searchType] << endl;
+                    cout << "Initial solution type: " << InitialSolutionTypeStrings[initialSolutionType] << endl;
+                    Result algoResult = Result(INT32_MAX, 0, 0, vector<int>(), vector<int>());
+                    double averageTime = 0;
+                    for(int i=0; i<2; i++){
+                        LocalSearch ls = LocalSearch(searchType, initialSolutionType, distances, costs, rand() % distances.size());
+                        clock_t start, end;
+                        start = clock();
+                        vector<int> solution = ls.solve().bestSolution;
+                        end = clock();
+                        double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
+                        int cost = ls.calculate_cost(solution);
+                        if(cost < algoResult.bestCost){
+                            algoResult.bestCost = cost;
+                            algoResult.bestSolution = solution;
+                        }
+                        if(cost > algoResult.worstCost){
+                            algoResult.worstCost = cost;
+                            algoResult.worstSolution = solution;
+                        }
+                        algoResult.averageCost += cost;
+                        // cout << "Time taken: " << time_taken << endl;
+                        averageTime += time_taken;
+                    }
+                    algoResult.averageCost /= distances.size();
+                    cout << "Best cost: " << algoResult.bestCost << endl;
+                    cout << "Worst cost: " << algoResult.worstCost << endl;
+                    cout << "Average cost: " << algoResult.averageCost << endl;
+                    averageTime /= distances.size();
+                    cout << "Average time: " << averageTime << endl;
+                    cout << "Best solution: ";
+                    for(int i=0; i<algoResult.bestSolution.size(); i++){
+                        cout << algoResult.bestSolution[i] << " ";
+                    }
+                    cout << endl;
+                }
+            }
+        }
 
 }
