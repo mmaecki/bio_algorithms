@@ -309,7 +309,7 @@ public:
                 {
                     bestDelta = delta;
                     bestMove = move;
-                    if (searchType == greedy)
+                    if (searchType == greedy && bestDelta < 0)
                     {
                         break;
                     }
@@ -471,12 +471,11 @@ int main(){
         }
         for(auto searchType: searchTypes){
             for(auto initialSolutionType: initialSolutionTypes){
+                    cout << "Name: " << LocalSearch(searchType, initialSolutionType, distances, costs, rand() % distances.size()).get_name() << endl;
                     cout << "Problem instance: " << ProblemInstanceStrings[problemInstance] << endl;
-                    cout << "Search type: " << SearchTypeStrings[searchType] << endl;
-                    cout << "Initial solution type: " << InitialSolutionTypeStrings[initialSolutionType] << endl;
                     Result algoResult = Result(INT32_MAX, 0, 0, vector<int>(), vector<int>());
                     double averageTime = 0;
-                    for(int i=0; i<2; i++){
+                    for(int i=0; i<20; i++){
                         LocalSearch ls = LocalSearch(searchType, initialSolutionType, distances, costs, rand() % distances.size());
                         clock_t start, end;
                         start = clock();
@@ -496,11 +495,11 @@ int main(){
                         // cout << "Time taken: " << time_taken << endl;
                         averageTime += time_taken;
                     }
-                    algoResult.averageCost /= distances.size();
+                    algoResult.averageCost /= 20;
                     cout << "Best cost: " << algoResult.bestCost << endl;
                     cout << "Worst cost: " << algoResult.worstCost << endl;
                     cout << "Average cost: " << algoResult.averageCost << endl;
-                    averageTime /= distances.size();
+                    averageTime /= 20;
                     cout << "Average time: " << averageTime << endl;
                     cout << "Best solution: ";
                     for(int i=0; i<algoResult.bestSolution.size(); i++){
