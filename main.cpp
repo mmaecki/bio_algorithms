@@ -101,6 +101,7 @@
 #include <map>
 #include <random>
 #include "RandomSearch.h"
+#include "RandomWalk.h"
 struct Node
 {
     int id;
@@ -171,16 +172,15 @@ std::map<std::string, Method> methodMap = {
 
 int main(int argc, char *argv[])
 {
-    if (argc < 4)
+    if (argc < 3)
     {
-        std::cerr << "Usage: " << argv[0] << " <filename> <method> <running_time>\n";
+        std::cerr << "Usage: " << argv[0] << " <filename> <method>\n";
         std::cerr << "Methods: random_search, random_walk, heuristic, local_search\n";
         return 1;
     }
 
     std::string filename = argv[1];
     std::string methodStr = argv[2];
-    double running_time = std::stod(argv[3]);
 
     if (methodMap.find(methodStr) == methodMap.end())
     {
@@ -203,22 +203,58 @@ int main(int argc, char *argv[])
     {
     case Method::RandomSearch:
     {
+        // read running time
+        if (argc < 4)
+        {
+            std::cerr << "Usage: " << argv[0] << " <filename> random_search <running_time>\n";
+            std::cerr << "RandomSearch method requires a running time.\n";
+            return 1;
+        }
+        double running_time = std::stod(argv[3]);
         RandomSearch algo(distances, running_time, generator);
 
         result = new Result(algo.solve());
-        std::cout << "Best cost: " << result->bestCost << std::endl;
+        std::cout << "Best cost: " << result->bestCost
+                  << "\nAverage cost: " << result->averageCost
+                  << "\nStandard deviation: " << result->standardDeviation
+                  << "\nIterations: " << result->iterations
+                  << "\nBest solution: " << std::endl;
+
+        for (int i = 0; i < result->bestSolution.size(); i++)
+        {
+            std::cout << result->bestSolution[i] << " ";
+        }
     }
+
     break;
     case Method::RandomWalk:
-        // Call RandomWalk function
-        break;
-    case Method::Heuristic:
-        if (argc < 5)
+    {
+        // read running time
+        if (argc < 4)
         {
-            std::cerr << "Heuristic method requires a starting node.\n";
+            std::cerr << "Usage: " << argv[0] << " <filename> random_walk <running_time>\n";
+            std::cerr << "RandomWalk method requires a running time.\n";
             return 1;
         }
-        start_node = std::stoi(argv[3]);
+        double running_time = std::stod(argv[3]);
+
+        RandomWalk algo(distances, running_time, generator);
+
+        result = new Result(algo.solve());
+        std::cout << "Best cost: " << result->bestCost
+                  << "\nAverage cost: " << result->averageCost
+                  << "\nStandard deviation: " << result->standardDeviation
+                  << "\nIterations: " << result->iterations
+                  << "\nBest solution: " << std::endl;
+
+        for (int i = 0; i < result->bestSolution.size(); i++)
+        {
+            std::cout << result->bestSolution[i] << " ";
+        }
+    }
+    break;
+    case Method::Heuristic:
+
         std::cout << "Heuristic with starting node: " << start_node << std::endl;
         break;
     case Method::LocalSearch:

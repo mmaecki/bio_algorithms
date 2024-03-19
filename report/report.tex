@@ -1,0 +1,71 @@
+%@descr: A template for a paper, a report or a thesis - suitable for modifications
+%@author: Maciej Komosiński
+
+\documentclass{article} 
+\usepackage[english]{babel} 
+\usepackage[utf8]{inputenc} 
+\usepackage[OT4]{fontenc}
+\usepackage{graphicx,color} %include pdf's (and png's for raster graphics... avoid raster graphics!)
+\usepackage{amsmath} %just for \eqref
+\usepackage{url}
+\usepackage[pdftex,hyperfootnotes=false,pdfborder={0 0 0}]{hyperref} % after all packages; pdfborder not implemented the same way for every implementation because the specification is imprecise; under miktex you just don't see the frames
+
+
+\input{_settings.tex}
+
+\title{Lab report:\\Biologically-inspired algorithms and models}
+\author{Mateusz Małecki, Krystian Moras}
+%\date{}
+
+
+\begin{document}
+
+\input{_title}
+
+\section*{Authors' contributions}
+
+\begin{tightlist}
+\item Mateusz Małecki implemented the algorithms
+\item Krystian Moras prepared the report
+\item All authors have read and approved the complete, final report.
+\end{tightlist}
+
+% Note: all co-authors must read the final report in its entirety and approve it.
+% (we avoid situations where, for example, X wrote a program, Y tested it and wrote a report, X does not know what Y wrote and what conclusions he/she drew)
+
+
+
+\section{Introduction}
+
+% The Traveling Salesman Problem (TSP) involves finding the shortest possible route that visits each city exactly once and returns to the origin city. Its applications span various fields including logistics, transportation, manufacturing, and networking. From a practical standpoint, it represents optimization challenges where minimizing distance or cost is crucial. The problem's complexity is NP-hard, meaning there's no known polynomial-time solution algorithm for large instances, making it a classic problem in combinatorial optimization.
+
+% Our choice of instances with Euclidean distances (EUC2D) allows for straightforward comparison due to the clear geometric interpretation of distances between cities. These instances provide a concrete basis for evaluating the efficiency and accuracy of different algorithms. In our implementation, we utilize heuristics or exact algorithms tailored for TSP, such as nearest neighbor, simulated annealing, or genetic algorithms. We focus on optimizing these algorithms' performance and accuracy while considering the specific characteristics of the chosen instances to draw meaningful conclusions about their effectiveness in solving TSP instances with EUC2D distances.
+
+\subsection{Neighborhood}
+
+\section{Comparison of algorithms}
+Quality = distance from the optimum (according to what measure?), the average and the best case (optionally: also the worst case).
+Running time (average)
+Efficiency of algorithms (average) – i.e., quality over time (suggest a good measure and justify your choice)
+G,S: average number of algorithm steps (step = changing the current solution)
+G,S,R,RW: average number of evaluated (i.e., visited – full or partial evaluation) solutions
+For the averages, we assess the stability of the results (standard deviations should always be shown along with the averages).
+
+
+G,S – plot: quality of the initial solution vs. quality of the final solution (at least 200 repetitions, use small points) for several interesting instances; interesting instances are the ones that demonstrate some heterogeneity. For the charts shown, provide and interpret the correlation
+
+G,S – plot: the number of restarts (up to at least 300, horizontal axis) in multi-random start vs. average and best of solutions found so far, for two (or a few) selected instances. Is it worth repeating the algorithm? If so, how many times?
+Objective assessment of the similarity of locally optimal solutions found for two selected instances, and the assessment of their similarity to the global optimum (if, for ATSP, we don't know the global one, use the best local one). For example: a plot of at least 100 points: x=quality, y=similarity
+
+\section{Conclusions}
+
+\section{Difficulties encountered}
+
+\section{Justification of the introduced improvements, suggestions for improvements and their expected effects}
+
+1. use C++ standard implementations of Fisher-Yates shuffle and random number generation
+\bibliography{biblio}
+\bibliographystyle{plainurl}
+
+
+\end{document}

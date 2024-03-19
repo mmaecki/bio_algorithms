@@ -6,13 +6,13 @@
 struct Result
 {
     int bestCost;
-    int worstCost;
-    int averageCost;
+    double averageCost;
+    double standardDeviation;
+    int iterations;
     std::vector<int> bestSolution;
-    std::vector<int> worstSolution;
 
-    Result(int bc, int wc, int ac, std::vector<int> bs, std::vector<int> ws)
-        : bestCost(bc), worstCost(wc), averageCost(ac), bestSolution(bs), worstSolution(ws) {}
+    Result(int best_cost, double average_cost, double standard_deviation, int iterations, std::vector<int> bs)
+        : bestCost(best_cost), averageCost(average_cost), standardDeviation(standard_deviation), iterations(iterations), bestSolution(bs) {}
 };
 
 #endif // RESULT_H
