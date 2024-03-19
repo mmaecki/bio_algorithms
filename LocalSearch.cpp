@@ -1,12 +1,19 @@
 #include "LocalSearch.h"
 
-LocalSearch::LocalSearch(SearchType searchType, InitialSolutionType initialSolutionType, vector<vector<int>> distances, vector<int> costs, int starting_node)
-    : Algo(distances, costs, "LS", starting_node), searchType(searchType), initialSolutionType(initialSolutionType)
+std::map<std::string, SearchType> SearchTypeStrings = {
+    {"greedy", SearchType::Greedy},
+    {"steepest", SearchType::Steepest}};
+
+std::map<std::string, InitialSolutionType> InitialSolutionTypeStrings = {
+    {"random_search", InitialSolutionType::RandomSearch},
+    {"greedy_cycle", InitialSolutionType::GreedyCycle},
+    {"random_walk", InitialSolutionType::RandomWalk}};
+
+LocalSearch::LocalSearch(SearchType searchType, InitialSolutionType initialSolutionType, vector<vector<int>> distances, std::default_random_engine rng)
+    : Algo(distances, "LS", rng), searchType(searchType), initialSolutionType(initialSolutionType)
 {
-    this->name += "_" + SearchTypeStrings[searchType];
-    this->name += "_" + InitialSolutionTypeStrings[initialSolutionType];
     nPoints = distances.size();
-} // ... constructor and other methods ...
+}
 
 int LocalSearch::calculate_cost(const vector<int> &solution)
 {
@@ -16,10 +23,7 @@ int LocalSearch::calculate_cost(const vector<int> &solution)
         cost += this->distances[solution[j]][solution[j + 1]];
     }
     cost += this->distances[solution[solution.size() - 1]][solution[0]];
-    for (int j = 0; j < solution.size(); j++)
-    {
-        cost += this->costs[solution[j]];
-    }
+
     return cost;
 }
 
@@ -42,7 +46,8 @@ Result LocalSearch::solve()
     // cout << "Initial solution created" << endl;
     // cout << solution.size() << endl;
     localSearch(&solution);
-    return Result(calculate_cost(solution), 0, 0, solution, vector<int>());
+
+    return Result(calculate_cost(solution), 0.0, 0.0, this->iterations, this->evaluations, solution);
 }
 
 void LocalSearch::localSearch(vector<int> *solution)
@@ -56,11 +61,13 @@ void LocalSearch::localSearch(vector<int> *solution)
         {
             vector<int> move = neighbourhoodIterator2.current_value();
             int delta = calculateDelta(*solution, move);
+
             if (delta < bestDelta)
             {
+
                 bestDelta = delta;
                 bestMove = move;
-                if (searchType == greedy && bestDelta < 0)
+                if (searchType == SearchType::Greedy && bestDelta < 0)
                 {
                     break;
                 }
@@ -68,30 +75,34 @@ void LocalSearch::localSearch(vector<int> *solution)
         }
         if (bestDelta >= 0)
         {
+
             // cout << "Local search finished" << endl;
             break;
         }
         // cout << "Applying move" << endl;
         // cout << bestMove[0] << " " << bestMove[1] << " " << bestMove[2] << " " << bestMove[3] << endl;
+        this->iterations++;
+
         applyMove(solution, bestMove);
     }
 }
 
 vector<int> LocalSearch::getInitialSolution(InitialSolutionType ist)
 {
-    if (ist == randomAlg)
+    if (ist == InitialSolutionType::RandomSearch)
     {
-        RandomSearch rs = RandomSearch(distances, costs, starting_node, 0.0);
+        RandomSearch rs = RandomSearch(distances, 0.0, rng);
         return rs.solve().bestSolution;
     }
-    else if (ist == randomWalk)
+    else if (ist == InitialSolutionType::RandomWalk)
     {
-        RandomWalk rw = RandomWalk(distances, costs, starting_node, 0.0);
+        RandomWalk rw = RandomWalk(distances, 0.0, rng);
         return rw.solve().bestSolution;
     }
-    else if (ist == GC)
+    else if (ist == InitialSolutionType::GreedyCycle)
     {
-        GreedyCycle gc = GreedyCycle(distances, costs, starting_node);
+        int starting_node = rng() % nPoints;
+        GreedyCycle gc = GreedyCycle(distances, starting_node, rng);
         return gc.solve().bestSolution;
     }
 }
@@ -109,10 +120,11 @@ int LocalSearch::calculateDelta(vector<int> &solution, vector<int> &move)
         int oldCost = distances[edge1_first][edge1_second] + distances[edge2_first][edge2_second];
         int newCost = distances[edge1_first][edge2_first] + distances[edge1_second][edge2_second];
         delta = newCost - oldCost;
+        this->evaluations++;
     }
     else
     {
-        throw runtime_error("Wrong size of best move");
+        throw std::runtime_error("Wrong size of best move");
     }
     return delta;
 }

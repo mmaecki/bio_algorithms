@@ -1,97 +1,3 @@
-// #include <vector>
-// #include <fstream>
-// #include <sstream>
-// #include <iostream>
-// #include <cmath>
-// #include <ctime>
-// #include <cstdlib>
-// #include <list>
-// #include <memory>
-// #include <map>
-// #include <numeric>
-// #include <coroutine>
-// #include <algorithm>
-// #include <random>
-// #include <cassert>
-// #include <typeinfo>
-// #include <string>
-// #include <unistd.h>
-
-// using namespace std;
-
-// auto rng = std::default_random_engine(869468469);
-
-// template <typename T>
-// struct generator
-// {
-//     struct promise_type;
-//     using handle_type = std::coroutine_handle<promise_type>;
-
-//     struct promise_type
-//     {
-//         T value;
-//         std::suspend_always initial_suspend() { return {}; }
-//         std::suspend_always final_suspend() noexcept { return {}; }
-//         generator get_return_object() { return generator{handle_type::from_promise(*this)}; }
-//         void unhandled_exception() { std::terminate(); }
-//         std::suspend_always yield_value(T val)
-//         {
-//             value = val;
-//             return {};
-//         }
-//     };
-
-//     bool move_next() { return coro ? (coro.resume(), !coro.done()) : false; }
-//     T current_value() { return coro.promise().value; }
-
-//     generator(generator const &) = delete;
-//     generator(generator &&other) : coro(other.coro) { other.coro = {}; }
-//     ~generator()
-//     {
-//         if (coro)
-//             coro.destroy();
-//     }
-
-// private:
-//     generator(handle_type h) : coro(h) {}
-//     handle_type coro;
-// };
-
-// enum SearchType
-// {
-//     greedy,
-//     steepest
-// };
-// enum InitialSolutionType
-// {
-//     randomAlg,
-//     GC,
-//     randomWalk
-// };
-
-// enum ProblemInstance
-// {
-//     TSPA,
-//     TSPB,
-//     TSPC,
-//     TSPD
-// };
-
-// std::map<SearchType, std::string> SearchTypeStrings = {
-//     {greedy, "greedy"},
-//     {steepest, "steepest"}};
-
-// std::map<InitialSolutionType, std::string> InitialSolutionTypeStrings = {
-//     {randomAlg, "random"},
-//     {GC, "GreedyCycle"},
-//     {randomWalk, "randomWalk"}};
-
-// std::map<ProblemInstance, std::string> ProblemInstanceStrings = {
-//     {TSPA, "TSPA"},
-//     {TSPB, "TSPB"},
-//     {TSPC, "TSPC"},
-//     {TSPD, "TSPD"}};
-
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -102,6 +8,9 @@
 #include <random>
 #include "RandomSearch.h"
 #include "RandomWalk.h"
+#include "GreedyCycle.h"
+#include "LocalSearch.h"
+
 struct Node
 {
     int id;
@@ -160,14 +69,14 @@ enum class Method
 {
     RandomSearch,
     RandomWalk,
-    Heuristic,
+    GreedyCycle,
     LocalSearch
 };
 
 std::map<std::string, Method> methodMap = {
     {"random_search", Method::RandomSearch},
     {"random_walk", Method::RandomWalk},
-    {"heuristic", Method::Heuristic},
+    {"greedy_cycle", Method::GreedyCycle},
     {"local_search", Method::LocalSearch}};
 
 int main(int argc, char *argv[])
@@ -195,7 +104,7 @@ int main(int argc, char *argv[])
     int start_node;
     std::string type;
 
-    std::default_random_engine generator = std::default_random_engine(869468469);
+    std::default_random_engine rng = std::default_random_engine(869468469);
 
     Result *result = nullptr;
 
@@ -211,7 +120,7 @@ int main(int argc, char *argv[])
             return 1;
         }
         double running_time = std::stod(argv[3]);
-        RandomSearch algo(distances, running_time, generator);
+        RandomSearch algo(distances, running_time, rng);
 
         result = new Result(algo.solve());
         std::cout << "Best cost: " << result->bestCost
@@ -238,13 +147,14 @@ int main(int argc, char *argv[])
         }
         double running_time = std::stod(argv[3]);
 
-        RandomWalk algo(distances, running_time, generator);
+        RandomWalk algo(distances, running_time, rng);
 
         result = new Result(algo.solve());
         std::cout << "Best cost: " << result->bestCost
                   << "\nAverage cost: " << result->averageCost
                   << "\nStandard deviation: " << result->standardDeviation
                   << "\nIterations: " << result->iterations
+                  << "\nEvaluations: " << result->evaluations
                   << "\nBest solution: " << std::endl;
 
         for (int i = 0; i < result->bestSolution.size(); i++)
@@ -253,19 +163,72 @@ int main(int argc, char *argv[])
         }
     }
     break;
-    case Method::Heuristic:
+    case Method::GreedyCycle:
 
-        std::cout << "Heuristic with starting node: " << start_node << std::endl;
-        break;
-    case Method::LocalSearch:
-        if (argc < 5)
+    {
+        if (argc < 4)
         {
-            std::cerr << "LocalSearch method requires a type (greedy or steepest).\n";
+            std::cerr << "Usage: " << argv[0] << " <filename> greedy_cycle <starting_node>\n";
+            std::cerr << "GreedyCycle method requires a starting node.\n";
             return 1;
         }
-        type = argv[3];
-        std::cout << "LocalSearch with type: " << type << std::endl;
-        break;
+        start_node = std::stoi(argv[3]);
+        GreedyCycle algo(distances, start_node, rng);
+
+        result = new Result(algo.solve());
+        std::cout << "Best cost: " << result->bestCost
+                  << "\nBest solution: " << std::endl;
+
+        for (int i = 0; i < result->bestSolution.size(); i++)
+        {
+            std::cout << result->bestSolution[i] << " ";
+        }
+    }
+    break;
+    case Method::LocalSearch:
+    {
+        if (argc < 5)
+        {
+            std::cerr << "Usage: " << argv[0] << " <filename> local_search <initial_solution_type> <local_search_type>\n";
+            std::cerr << "LocalSearch method requires an initial solution type and a local search type.\n";
+            std::cerr << "Initial solution types: random_search, greedy_cycle, random_walk\n";
+            std::cerr << "Local search types: greedy, steepest\n";
+            return 1;
+        }
+        std::string initialSolutionTypeStr = argv[3];
+        std::string localSearchTypeStr = argv[4];
+
+        if (InitialSolutionTypeStrings.find(initialSolutionTypeStr) == InitialSolutionTypeStrings.end())
+        {
+            std::cerr << "Invalid initial solution type. Choose from: random_search, greedy_cycle, random_walk\n";
+            return 1;
+        }
+
+        if (SearchTypeStrings.find(localSearchTypeStr) == SearchTypeStrings.end())
+        {
+            std::cerr << "Invalid local search type. Choose from: greedy, steepest\n";
+            return 1;
+        }
+
+        InitialSolutionType initialSolutionType = InitialSolutionTypeStrings[initialSolutionTypeStr];
+        SearchType localSearchType = SearchTypeStrings[localSearchTypeStr];
+
+        LocalSearch algo(localSearchType, initialSolutionType, distances, rng);
+
+        result = new Result(algo.solve());
+        std::cout << "Best cost: " << result->bestCost
+                  << "\nAverage cost: " << result->averageCost
+                  << "\nStandard deviation: " << result->standardDeviation
+                  << "\nIterations: " << result->iterations
+                  << "\nEvaluations: " << result->evaluations
+                  << "\nBest solution: " << std::endl;
+
+        for (int i = 0; i < result->bestSolution.size(); i++)
+        {
+            std::cout << result->bestSolution[i] << " ";
+        }
+    }
+    break;
     }
 
     delete result;

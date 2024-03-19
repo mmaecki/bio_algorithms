@@ -1,7 +1,10 @@
 #include "RandomWalk.h"
-
-RandomWalk::RandomWalk(vector<vector<int>> distances, double time_limit, std::default_random_engine generator)
-    : Algo(distances, "RandomWalk", generator), time_limit(time_limit) {}
+#include <iostream>
+RandomWalk::RandomWalk(vector<vector<int>> distances, double time_limit, std::default_random_engine rng)
+    : Algo(distances, "RandomWalk", rng), time_limit(time_limit)
+{
+    this->nPoints = distances.size();
+}
 
 Result RandomWalk::solve()
 {
@@ -9,8 +12,9 @@ Result RandomWalk::solve()
     int solution_size = this->distances.size();
     vector<int> current_solution = vector<int>(solution_size);
     iota(current_solution.begin(), current_solution.end(), 0);
-    shuffle(current_solution.begin(), current_solution.end(), generator);
+    shuffle(current_solution.begin(), current_solution.end(), rng);
     int bestCost = calculate_cost(current_solution);
+    int currentCost = bestCost;
     vector<int> bestSolution = current_solution;
     int iterations = 0;
     clock_t start, end;
@@ -25,20 +29,50 @@ Result RandomWalk::solve()
         {
             double variance = M2 / (iterations - 1);
             double std_dev = sqrt(variance);
-            return Result(bestCost, mean, std_dev, iterations, bestSolution);
+            return Result(bestCost, mean, std_dev, iterations, iterations, bestSolution);
         }
-        int i = this->generator() % solution_size;
-        int j = this->generator() % solution_size;
+        int i = this->rng() % solution_size;
+        int j = ((this->rng() % (solution_size - 1)) + 1 + i) % solution_size;
+
+        currentCost += calculate_delta(current_solution, i, j);
         swap(current_solution[i], current_solution[j]);
-        int cost = calculate_cost(current_solution);
         iterations++;
-        double delta = cost - mean;
+        double delta = currentCost - mean;
         mean += delta / iterations;
-        M2 += delta * (cost - mean);
-        if (cost < bestCost)
+        M2 += delta * (currentCost - mean);
+        if (currentCost < bestCost)
         {
-            bestCost = cost;
+            bestCost = currentCost;
             bestSolution = current_solution;
         }
     }
+}
+
+int RandomWalk::calculate_delta(vector<int> &solution, int i, int j)
+{
+    int prev_i = (i - 1 + this->nPoints) % this->nPoints;
+    int next_i = (i + 1) % this->nPoints;
+    int prev_j = (j - 1 + this->nPoints) % this->nPoints;
+    int next_j = (j + 1) % this->nPoints;
+
+    int oldCost, newCost;
+
+    if ((i + 1) % this->nPoints == j)
+    { // j follows i
+        oldCost = distances[solution[prev_i]][solution[i]] + distances[solution[i]][solution[j]] + distances[solution[j]][solution[next_j]];
+        newCost = distances[solution[prev_i]][solution[j]] + distances[solution[j]][solution[i]] + distances[solution[i]][solution[next_j]];
+    }
+    else if ((j + 1) % this->nPoints == i)
+    { // i follows j
+        oldCost = distances[solution[prev_j]][solution[j]] + distances[solution[j]][solution[i]] + distances[solution[i]][solution[next_i]];
+        newCost = distances[solution[prev_j]][solution[i]] + distances[solution[i]][solution[j]] + distances[solution[j]][solution[next_i]];
+    }
+    else
+    { // i and j are not neighbors
+        oldCost = distances[solution[prev_i]][solution[i]] + distances[solution[i]][solution[next_i]] + distances[solution[prev_j]][solution[j]] + distances[solution[j]][solution[next_j]];
+        newCost = distances[solution[prev_i]][solution[j]] + distances[solution[j]][solution[next_i]] + distances[solution[prev_j]][solution[i]] + distances[solution[i]][solution[next_j]];
+    }
+
+    this->evaluations++;
+    return newCost - oldCost;
 }

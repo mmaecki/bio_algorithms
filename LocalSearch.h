@@ -8,19 +8,39 @@
 #include "GreedyCycle.h"
 #include <vector>
 #include <climits>
-
+#include <vector>
+#include "generator.h"
+#include <map>
+#include <stdexcept>
 using std::vector;
 
-enum SearchType
+enum class SearchType
 {
-    greedy,
-    steepest
+    Greedy,
+    Steepest
 };
-enum InitialSolutionType
+
+enum class InitialSolutionType
 {
-    randomAlg,
-    randomWalk,
-    GC
+    RandomSearch,
+    GreedyCycle,
+    RandomWalk
+};
+
+extern std::map<std::string, InitialSolutionType> InitialSolutionTypeStrings;
+extern std::map<std::string, SearchType> SearchTypeStrings;
+
+struct LocalSearchResult
+{
+    int bestCost;
+    double averageCost;
+    double standardDeviation;
+    int iterations;
+    int evaluations;
+    std::vector<int> bestSolution;
+
+    LocalSearchResult(int best_cost, double average_cost, double standard_deviation, int iterations, int evaluations, std::vector<int> bs)
+        : bestCost(best_cost), averageCost(average_cost), standardDeviation(standard_deviation), iterations(iterations), evaluations(evaluations), bestSolution(bs) {}
 };
 
 class LocalSearch : public Algo
@@ -29,8 +49,10 @@ public:
     SearchType searchType;
     InitialSolutionType initialSolutionType;
     int nPoints;
+    int iterations = 0;
 
-    LocalSearch(SearchType searchType, InitialSolutionType initialSolutionType, vector<vector<int>> distances, vector<int> costs, int starting_node);
+    int evaluations = 0;
+    LocalSearch(SearchType searchType, InitialSolutionType initialSolutionType, vector<vector<int>> distances, std::default_random_engine rng);
     int calculate_cost(const vector<int> &solution);
     int fixIndex(int index, int solutionSize);
     Result solve();

@@ -15,7 +15,10 @@ class RandomWalk : public Algo
 {
 public:
     double time_limit;
-    RandomWalk(vector<vector<int>> distances, double time_limit, std::default_random_engine generator);
+    int nPoints;
+    int evaluations = 0;
+    RandomWalk(vector<vector<int>> distances, double time_limit, std::default_random_engine rng);
+    int calculate_delta(vector<int> &solution, int i, int j);
     Result solve() override;
 };
 

@@ -8,7 +8,7 @@ CXXFLAGS = -O3 -std=c++2a -fcoroutines -ffast-math
 TARGET = main
 
 # specify the source files
-SRCS = Algo.cpp RandomSearch.cpp RandomWalk.cpp main.cpp 
+SRCS = Algo.cpp RandomSearch.cpp RandomWalk.cpp GreedyCycle.cpp LocalSearch.cpp main.cpp 
 
 # specify the object files
 OBJS = $(SRCS:.cpp=.o)

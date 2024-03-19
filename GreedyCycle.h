@@ -10,7 +10,8 @@ using std::vector;
 class GreedyCycle : public Algo
 {
 public:
-    GreedyCycle(vector<vector<int>> distances, vector<int> costs, int starting_node);
+    int starting_node;
+    GreedyCycle(vector<vector<int>> distances, int starting_node, std::default_random_engine rng);
     Result solve() override;
 };
 

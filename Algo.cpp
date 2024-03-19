@@ -1,8 +1,8 @@
 #include <random>
 #include "Algo.h"
 
-Algo::Algo(std::vector<std::vector<int>> distances, std::string name, std::default_random_engine generator)
-    : distances(distances), name(name), generator(generator) {}
+Algo::Algo(std::vector<std::vector<int>> distances, std::string name, std::default_random_engine rng)
+    : distances(distances), name(name), rng(rng) {}
 
 int Algo::calculate_cost(vector<int> solution)
 {
