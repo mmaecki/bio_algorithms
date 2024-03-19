@@ -11,7 +11,7 @@ class GreedyCycle : public Algo
 {
 public:
     int starting_node;
-    GreedyCycle(vector<vector<int>> distances, int starting_node, std::default_random_engine rng);
+    GreedyCycle(vector<vector<double>> distances, int starting_node, std::default_random_engine rng);
     Result solve() override;
 };
 

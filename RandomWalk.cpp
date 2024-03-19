@@ -1,6 +1,6 @@
 #include "RandomWalk.h"
 #include <iostream>
-RandomWalk::RandomWalk(vector<vector<int>> distances, double time_limit, std::default_random_engine rng)
+RandomWalk::RandomWalk(vector<vector<double>> distances, double time_limit, std::default_random_engine rng)
     : Algo(distances, "RandomWalk", rng), time_limit(time_limit)
 {
     this->nPoints = distances.size();
@@ -13,8 +13,8 @@ Result RandomWalk::solve()
     vector<int> current_solution = vector<int>(solution_size);
     iota(current_solution.begin(), current_solution.end(), 0);
     shuffle(current_solution.begin(), current_solution.end(), rng);
-    int bestCost = calculate_cost(current_solution);
-    int currentCost = bestCost;
+    double bestCost = calculate_cost(current_solution);
+    double currentCost = bestCost;
     vector<int> bestSolution = current_solution;
     int iterations = 0;
     clock_t start, end;
@@ -48,14 +48,14 @@ Result RandomWalk::solve()
     }
 }
 
-int RandomWalk::calculate_delta(vector<int> &solution, int i, int j)
+double RandomWalk::calculate_delta(vector<int> &solution, int i, int j)
 {
     int prev_i = (i - 1 + this->nPoints) % this->nPoints;
     int next_i = (i + 1) % this->nPoints;
     int prev_j = (j - 1 + this->nPoints) % this->nPoints;
     int next_j = (j + 1) % this->nPoints;
 
-    int oldCost, newCost;
+    double oldCost, newCost;
 
     if ((i + 1) % this->nPoints == j)
     { // j follows i

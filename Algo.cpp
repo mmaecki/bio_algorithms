@@ -1,12 +1,12 @@
 #include <random>
 #include "Algo.h"
 
-Algo::Algo(std::vector<std::vector<int>> distances, std::string name, std::default_random_engine rng)
+Algo::Algo(std::vector<std::vector<double>> distances, std::string name, std::default_random_engine rng)
     : distances(distances), name(name), rng(rng) {}
 
-int Algo::calculate_cost(vector<int> solution)
+double Algo::calculate_cost(vector<int> solution)
 {
-    int cost = 0;
+    double cost = 0;
     for (int j = 0; j < solution.size() - 1; j++)
     {
         cost += distances[solution[j]][solution[j + 1]];

@@ -9,15 +9,15 @@ std::map<std::string, InitialSolutionType> InitialSolutionTypeStrings = {
     {"greedy_cycle", InitialSolutionType::GreedyCycle},
     {"random_walk", InitialSolutionType::RandomWalk}};
 
-LocalSearch::LocalSearch(SearchType searchType, InitialSolutionType initialSolutionType, vector<vector<int>> distances, std::default_random_engine rng)
+LocalSearch::LocalSearch(SearchType searchType, InitialSolutionType initialSolutionType, vector<vector<double>> distances, std::default_random_engine rng)
     : Algo(distances, "LS", rng), searchType(searchType), initialSolutionType(initialSolutionType)
 {
     nPoints = distances.size();
 }
 
-int LocalSearch::calculate_cost(const vector<int> &solution)
+double LocalSearch::calculate_cost(const vector<int> &solution)
 {
-    int cost = 0;
+    double cost = 0;
     for (int j = 0; j < solution.size() - 1; j++)
     {
         cost += this->distances[solution[j]][solution[j + 1]];
@@ -55,12 +55,12 @@ void LocalSearch::localSearch(vector<int> *solution)
     while (true)
     {
         auto neighbourhoodIterator2 = neighbourhoodGenerator(*solution);
-        int bestDelta = INT32_MAX;
+        double bestDelta = std::numeric_limits<double>::max();
         vector<int> bestMove;
         while (neighbourhoodIterator2.move_next())
         {
             vector<int> move = neighbourhoodIterator2.current_value();
-            int delta = calculateDelta(*solution, move);
+            double delta = calculateDelta(*solution, move);
 
             if (delta < bestDelta)
             {
@@ -107,7 +107,7 @@ vector<int> LocalSearch::getInitialSolution(InitialSolutionType ist)
     }
 }
 
-int LocalSearch::calculateDelta(vector<int> &solution, vector<int> &move)
+double LocalSearch::calculateDelta(vector<int> &solution, vector<int> &move)
 {
     int delta;
     if (move.size() == 4)
@@ -117,8 +117,8 @@ int LocalSearch::calculateDelta(vector<int> &solution, vector<int> &move)
         int edge1_second = solution[move[1]];
         int edge2_first = solution[move[2]];
         int edge2_second = solution[move[3]];
-        int oldCost = distances[edge1_first][edge1_second] + distances[edge2_first][edge2_second];
-        int newCost = distances[edge1_first][edge2_first] + distances[edge1_second][edge2_second];
+        double oldCost = distances[edge1_first][edge1_second] + distances[edge2_first][edge2_second];
+        double newCost = distances[edge1_first][edge2_first] + distances[edge1_second][edge2_second];
         delta = newCost - oldCost;
         this->evaluations++;
     }

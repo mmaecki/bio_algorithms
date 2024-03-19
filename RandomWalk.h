@@ -17,8 +17,8 @@ public:
     double time_limit;
     int nPoints;
     int evaluations = 0;
-    RandomWalk(vector<vector<int>> distances, double time_limit, std::default_random_engine rng);
-    int calculate_delta(vector<int> &solution, int i, int j);
+    RandomWalk(vector<vector<double>> distances, double time_limit, std::default_random_engine rng);
+    double calculate_delta(vector<int> &solution, int i, int j);
     Result solve() override;
 };
 

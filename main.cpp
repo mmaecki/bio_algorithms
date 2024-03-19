@@ -10,30 +10,31 @@
 #include "RandomWalk.h"
 #include "GreedyCycle.h"
 #include "LocalSearch.h"
+#include <iomanip>
 
 struct Node
 {
     int id;
-    int x;
-    int y;
+    double x;
+    double y;
 };
 
-std::vector<std::vector<int>> calcDistances(const std::vector<Node> &nodes)
+std::vector<std::vector<double>> calcDistances(const std::vector<Node> &nodes)
 {
-    std::vector<std::vector<int>> distances(nodes.size(), std::vector<int>(nodes.size()));
+    std::vector<std::vector<double>> distances(nodes.size(), std::vector<double>(nodes.size()));
     for (int i = 0; i < nodes.size(); i++)
     {
         for (int j = 0; j < nodes.size(); j++)
         {
-            int x = nodes[i].x - nodes[j].x;
-            int y = nodes[i].y - nodes[j].y;
-            distances[i][j] = round(sqrt(x * x + y * y));
+            double x = nodes[i].x - nodes[j].x;
+            double y = nodes[i].y - nodes[j].y;
+            distances[i][j] = sqrt(x * x + y * y);
         }
     }
     return distances;
 }
 
-std::vector<std::vector<int>> read_file(std::string filename)
+std::vector<std::vector<double>> read_file(std::string filename)
 {
     std::ifstream file(filename);
     std::string line;
@@ -53,7 +54,10 @@ std::vector<std::vector<int>> read_file(std::string filename)
                 while (std::getline(file, line) && line != "EOF")
                 {
                     Node node;
-                    std::sscanf(line.c_str(), "%d %d %d", &node.id, &node.x, &node.y);
+                    // NODE_COORD_SECTION
+                    // 1 0.00000e+00 0.00000e+00 2 5.51200e+02 9.96400e+02
+
+                    std::sscanf(line.c_str(), "%d %lf %lf", &node.id, &node.x, &node.y);
                     nodes.push_back(node);
                 }
                 break;
@@ -81,6 +85,8 @@ std::map<std::string, Method> methodMap = {
 
 int main(int argc, char *argv[])
 {
+    std::setprecision(2);
+
     if (argc < 3)
     {
         std::cerr << "Usage: " << argv[0] << " <filename> <method>\n";
@@ -99,7 +105,7 @@ int main(int argc, char *argv[])
 
     Method method = methodMap[methodStr];
 
-    std::vector<std::vector<int>> distances = read_file(filename);
+    std::vector<std::vector<double>> distances = read_file(filename);
 
     int start_node;
     std::string type;

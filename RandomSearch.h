@@ -15,7 +15,7 @@ class RandomSearch : public Algo
 {
 public:
     double time_limit;
-    RandomSearch(vector<vector<int>> distances, double time_limit, std::default_random_engine rng);
+    RandomSearch(vector<vector<double>> distances, double time_limit, std::default_random_engine rng);
     Result solve() override;
 };
 

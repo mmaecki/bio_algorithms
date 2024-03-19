@@ -1,7 +1,7 @@
 #include "RandomSearch.h"
 #include <iostream>
 
-RandomSearch::RandomSearch(vector<vector<int>> distances, double time_limit, std::default_random_engine rng)
+RandomSearch::RandomSearch(vector<vector<double>> distances, double time_limit, std::default_random_engine rng)
     : Algo(distances, "RandomSearch", rng), time_limit(time_limit) {}
 
 Result RandomSearch::solve()
@@ -11,7 +11,7 @@ Result RandomSearch::solve()
     vector<int> current_solution = vector<int>(solution_size);
     iota(current_solution.begin(), current_solution.end(), 0);
     shuffle(current_solution.begin(), current_solution.end(), this->rng);
-    int bestCost = calculate_cost(current_solution);
+    double bestCost = calculate_cost(current_solution);
     vector<int> bestSolution = current_solution;
     double mean = 0.0;
     double M2 = 0.0;
@@ -28,7 +28,7 @@ Result RandomSearch::solve()
             return Result(bestCost, mean, std_dev, iterations, iterations, bestSolution);
         }
         shuffle(current_solution.begin(), current_solution.end(), this->rng);
-        int cost = calculate_cost(current_solution);
+        double cost = calculate_cost(current_solution);
         iterations++;
         double delta = cost - mean;
         mean += delta / iterations;
