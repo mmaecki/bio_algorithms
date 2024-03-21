@@ -1,3 +1,5 @@
+#define PARTIAL_RESULTS_SIZE 100
+
 #include "RandomWalk.h"
 #include <iostream>
 RandomWalk::RandomWalk(vector<vector<double>> distances, double time_limit, std::default_random_engine rng)
@@ -8,14 +10,16 @@ RandomWalk::RandomWalk(vector<vector<double>> distances, double time_limit, std:
 
 Result RandomWalk::solve()
 {
-    vector<int> worstSolution;
     int solution_size = this->distances.size();
     vector<int> current_solution = vector<int>(solution_size);
     iota(current_solution.begin(), current_solution.end(), 0);
     shuffle(current_solution.begin(), current_solution.end(), rng);
-    double bestCost = calculate_cost(current_solution);
+    double initialCost = calculate_cost(current_solution);
+    double bestCost = initialCost;
+    double worstCost = initialCost;
     double currentCost = bestCost;
     vector<int> bestSolution = current_solution;
+    vector<int> worstSolution = current_solution;
     int iterations = 0;
     clock_t start, end;
     double mean = 0.0;
@@ -25,11 +29,15 @@ Result RandomWalk::solve()
     {
         end = clock();
         double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
+        if (time_taken > this->time_limit / PARTIAL_RESULTS_SIZE * this->partialResults.size())
+        {
+            this->partialResults.push_back(std::make_pair(time_taken, bestCost));
+        }
         if (time_taken >= this->time_limit)
         {
             double variance = M2 / (iterations - 1);
             double std_dev = sqrt(variance);
-            return Result(bestCost, mean, std_dev, iterations, iterations, bestSolution);
+            return Result(bestCost, mean, worstCost, std_dev, iterations, iterations, bestSolution, worstSolution, time_taken, this->partialResults, initialCost);
         }
         int i = this->rng() % solution_size;
         int j = ((this->rng() % (solution_size - 1)) + 1 + i) % solution_size;
@@ -40,6 +48,11 @@ Result RandomWalk::solve()
         double delta = currentCost - mean;
         mean += delta / iterations;
         M2 += delta * (currentCost - mean);
+        if (currentCost > worstCost)
+        {
+            worstCost = currentCost;
+            worstSolution = current_solution;
+        }
         if (currentCost < bestCost)
         {
             bestCost = currentCost;

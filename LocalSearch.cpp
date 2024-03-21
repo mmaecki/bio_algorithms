@@ -8,7 +8,6 @@ std::map<std::string, InitialSolutionType> InitialSolutionTypeStrings = {
     {"random_search", InitialSolutionType::RandomSearch},
     {"greedy_cycle", InitialSolutionType::GreedyCycle},
     {"random_walk", InitialSolutionType::RandomWalk}};
-
 LocalSearch::LocalSearch(SearchType searchType, InitialSolutionType initialSolutionType, vector<vector<double>> distances, std::default_random_engine rng)
     : Algo(distances, "LS", rng), searchType(searchType), initialSolutionType(initialSolutionType)
 {
@@ -42,12 +41,18 @@ int LocalSearch::fixIndex(int index, int solutionSize)
 
 Result LocalSearch::solve()
 {
+    double start = clock();
     vector<int> solution = getInitialSolution(this->initialSolutionType);
-    // cout << "Initial solution created" << endl;
-    // cout << solution.size() << endl;
+    double initialCost = calculate_cost(solution);
+    // copy solution to worstSolution
+    vector<int> worstSolution = solution;
     localSearch(&solution);
+    double end = clock();
+    double best_cost = calculate_cost(solution);
+    double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
+    this->partialResults.push_back(std::make_pair(best_cost, time_taken));
 
-    return Result(calculate_cost(solution), 0.0, 0.0, this->iterations, this->evaluations, solution);
+    return Result(best_cost, best_cost, initialCost, 0.0, this->iterations, this->evaluations, solution, worstSolution, time_taken, this->partialResults, initialCost);
 }
 
 void LocalSearch::localSearch(vector<int> *solution)

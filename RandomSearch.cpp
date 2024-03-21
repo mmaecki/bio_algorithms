@@ -1,3 +1,5 @@
+#define PARTIAL_RESULTS_SIZE 100
+
 #include "RandomSearch.h"
 #include <iostream>
 
@@ -11,8 +13,11 @@ Result RandomSearch::solve()
     vector<int> current_solution = vector<int>(solution_size);
     iota(current_solution.begin(), current_solution.end(), 0);
     shuffle(current_solution.begin(), current_solution.end(), this->rng);
-    double bestCost = calculate_cost(current_solution);
+    double initialCost = calculate_cost(current_solution);
     vector<int> bestSolution = current_solution;
+    vector<int> worstSolution = current_solution;
+    double bestCost = initialCost;
+    double worstCost = initialCost;
     double mean = 0.0;
     double M2 = 0.0;
     int iterations = 0;
@@ -21,11 +26,16 @@ Result RandomSearch::solve()
     {
         end = clock();
         double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
+        // partial results
+        if (time_taken > this->time_limit / PARTIAL_RESULTS_SIZE * this->partialResults.size())
+        {
+            partialResults.push_back(std::make_pair(time_taken, bestCost));
+        }
         if (time_taken >= this->time_limit)
         {
             double variance = M2 / (iterations - 1);
             double std_dev = sqrt(variance);
-            return Result(bestCost, mean, std_dev, iterations, iterations, bestSolution);
+            return Result(bestCost, mean, worstCost, std_dev, iterations, iterations, bestSolution, worstSolution, time_taken, this->partialResults, initialCost);
         }
         shuffle(current_solution.begin(), current_solution.end(), this->rng);
         double cost = calculate_cost(current_solution);
@@ -33,6 +43,11 @@ Result RandomSearch::solve()
         double delta = cost - mean;
         mean += delta / iterations;
         M2 += delta * (cost - mean);
+        if (cost > worstCost)
+        {
+            worstCost = cost;
+            worstSolution = current_solution;
+        }
         if (cost < bestCost)
         {
             bestCost = cost;

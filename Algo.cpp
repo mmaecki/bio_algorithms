@@ -2,7 +2,10 @@
 #include "Algo.h"
 
 Algo::Algo(std::vector<std::vector<double>> distances, std::string name, std::default_random_engine rng)
-    : distances(distances), name(name), rng(rng) {}
+    : distances(distances), name(name), rng(rng)
+{
+    this->partialResults = vector<std::pair<double, double>>();
+}
 
 double Algo::calculate_cost(vector<int> solution)
 {

@@ -14,6 +14,7 @@ class Algo
 public:
     vector<vector<double>> distances;
     string name;
+    vector<std::pair<double, double>> partialResults;
     Algo(std::vector<std::vector<double>> distances, std::string name, std::default_random_engine rng);
     std::default_random_engine rng;
     virtual Result solve() = 0;

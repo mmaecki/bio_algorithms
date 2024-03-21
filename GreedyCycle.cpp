@@ -5,7 +5,6 @@ GreedyCycle::GreedyCycle(vector<vector<double>> distances, int starting_node, st
 
 Result GreedyCycle::solve()
 {
-    vector<int> worstSolution;
     int solution_size = this->distances.size();
     vector<int> current_solution;
     vector<bool> visited(this->distances.size());
@@ -45,5 +44,5 @@ Result GreedyCycle::solve()
         visited[insert_node] = true;
     }
     double current_cost = calculate_cost(current_solution);
-    return Result(current_cost, current_cost, 0, 1, 1, current_solution);
+    return Result(current_cost, current_cost, current_cost, 0, 1, 1, current_solution, current_solution, -1.0, this->partialResults, current_cost);
 }

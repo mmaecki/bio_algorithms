@@ -10,6 +10,7 @@
 #include "RandomWalk.h"
 #include "GreedyCycle.h"
 #include "LocalSearch.h"
+#include "MSLS.h"
 #include <iomanip>
 
 struct Node
@@ -69,19 +70,52 @@ std::vector<std::vector<double>> read_file(std::string filename)
     return calcDistances(nodes);
 }
 
+void printResults(Result *result)
+{
+    std::cout << "Best cost: " << result->bestCost << std::endl;
+    std::cout << "Mean: " << result->averageCost << std::endl;
+    std::cout << "Worst cost: " << result->worstCost << std::endl;
+    std::cout << "Standard deviation: " << result->standardDeviation << std::endl;
+    std::cout << "Iterations: " << result->iterations << std::endl;
+    std::cout << "Evaluations: " << result->evaluations << std::endl;
+    std::cout << "Running time: " << result->runningTime << std::endl;
+    std::cout << "Best solution: ";
+    for (int i = 0; i < result->bestSolution.size(); i++)
+    {
+        std::cout << result->bestSolution[i] << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "Worst solution: ";
+    for (int i = 0; i < result->worstSolution.size(); i++)
+    {
+        std::cout << result->worstSolution[i] << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "Initial solution cost: " << result->initialSolutionCost << std::endl;
+
+    std::cout << "Partial results: " << std::endl;
+    for (int i = 0; i < result->partialResults.size(); i++)
+    {
+        std::cout << result->partialResults[i].first << ":" << result->partialResults[i].second << "\n";
+    }
+    std::cout << std::endl;
+}
+
 enum class Method
 {
     RandomSearch,
     RandomWalk,
     GreedyCycle,
-    LocalSearch
+    LocalSearch,
+    MSLS
 };
 
 std::map<std::string, Method> methodMap = {
     {"random_search", Method::RandomSearch},
     {"random_walk", Method::RandomWalk},
     {"greedy_cycle", Method::GreedyCycle},
-    {"local_search", Method::LocalSearch}};
+    {"local_search", Method::LocalSearch},
+    {"msls", Method::MSLS}};
 
 int main(int argc, char *argv[])
 {
@@ -109,8 +143,8 @@ int main(int argc, char *argv[])
 
     int start_node;
     std::string type;
-
-    std::default_random_engine rng = std::default_random_engine(869468469);
+    // random number generator with random seed
+    std::default_random_engine rng = std::default_random_engine(std::random_device{}());
 
     Result *result = nullptr;
 
@@ -129,16 +163,7 @@ int main(int argc, char *argv[])
         RandomSearch algo(distances, running_time, rng);
 
         result = new Result(algo.solve());
-        std::cout << "Best cost: " << result->bestCost
-                  << "\nAverage cost: " << result->averageCost
-                  << "\nStandard deviation: " << result->standardDeviation
-                  << "\nIterations: " << result->iterations
-                  << "\nBest solution: " << std::endl;
-
-        for (int i = 0; i < result->bestSolution.size(); i++)
-        {
-            std::cout << result->bestSolution[i] << " ";
-        }
+        printResults(result);
     }
 
     break;
@@ -156,17 +181,7 @@ int main(int argc, char *argv[])
         RandomWalk algo(distances, running_time, rng);
 
         result = new Result(algo.solve());
-        std::cout << "Best cost: " << result->bestCost
-                  << "\nAverage cost: " << result->averageCost
-                  << "\nStandard deviation: " << result->standardDeviation
-                  << "\nIterations: " << result->iterations
-                  << "\nEvaluations: " << result->evaluations
-                  << "\nBest solution: " << std::endl;
-
-        for (int i = 0; i < result->bestSolution.size(); i++)
-        {
-            std::cout << result->bestSolution[i] << " ";
-        }
+        printResults(result);
     }
     break;
     case Method::GreedyCycle:
@@ -182,13 +197,7 @@ int main(int argc, char *argv[])
         GreedyCycle algo(distances, start_node, rng);
 
         result = new Result(algo.solve());
-        std::cout << "Best cost: " << result->bestCost
-                  << "\nBest solution: " << std::endl;
-
-        for (int i = 0; i < result->bestSolution.size(); i++)
-        {
-            std::cout << result->bestSolution[i] << " ";
-        }
+        printResults(result);
     }
     break;
     case Method::LocalSearch:
@@ -222,21 +231,45 @@ int main(int argc, char *argv[])
         LocalSearch algo(localSearchType, initialSolutionType, distances, rng);
 
         result = new Result(algo.solve());
-        std::cout << "Best cost: " << result->bestCost
-                  << "\nAverage cost: " << result->averageCost
-                  << "\nStandard deviation: " << result->standardDeviation
-                  << "\nIterations: " << result->iterations
-                  << "\nEvaluations: " << result->evaluations
-                  << "\nBest solution: " << std::endl;
-
-        for (int i = 0; i < result->bestSolution.size(); i++)
+        printResults(result);
+    }
+    break;
+    case Method::MSLS:
+    {
+        if (argc < 6)
         {
-            std::cout << result->bestSolution[i] << " ";
+            std::cerr << "Usage: " << argv[0] << " <filename> msls <initial_solution_type> <local_search_type> <time_limit>\n";
+            std::cerr << "MSLS method requires an initial solution type, local search type and a time limit \n";
+            std::cerr << "Local search types: greedy, steepest\n";
+            return 1;
         }
+        std::string initialSolutionTypeStr = argv[3];
+        std::string localSearchTypeStr = argv[4];
+
+        if (InitialSolutionTypeStrings.find(initialSolutionTypeStr) == InitialSolutionTypeStrings.end())
+        {
+            std::cerr << "Invalid initial solution type. Choose from: random_search, greedy_cycle, random_walk\n";
+            return 1;
+        }
+
+        if (SearchTypeStrings.find(localSearchTypeStr) == SearchTypeStrings.end())
+        {
+            std::cerr << "Invalid local search type. Choose from: greedy, steepest\n";
+            return 1;
+        }
+
+        double time_limit = std::stod(argv[5]);
+
+        SearchType localSearchType = SearchTypeStrings[localSearchTypeStr];
+        InitialSolutionType initialSolutionType = InitialSolutionTypeStrings[initialSolutionTypeStr];
+
+        MSLS algo(localSearchType, initialSolutionType, distances, rng, time_limit);
+
+        result = new Result(algo.solve());
+        printResults(result);
     }
     break;
     }
-
     delete result;
 
     return 0;
