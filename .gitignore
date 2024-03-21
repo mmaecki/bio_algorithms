@@ -30,3 +30,19 @@
 *.exe
 *.out
 *.app
+
+data/
+*.pdf
+main
+
+# latex
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+
+.vscode/
